@@ -24,6 +24,10 @@ class CustomUser(AbstractUser):
         max_length=150
     )
 
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
@@ -42,6 +46,8 @@ class Follower(models.Model):
 
     class Meta:
         unique_together = [['followed_user', 'following_user']]
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
 
     def save(self, *args, **kwargs):
         if self.followed_user == self.following_user:

@@ -1,14 +1,19 @@
 from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import Follower, CustomUser
-from .serializers import UserSerializer
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+from .serializers import (UserSerializer, TagSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          ShortRecipeSerializer)
+from .mixins import ListRetrieveMixin
 
 
 @api_view(['GET'])
@@ -56,3 +61,86 @@ def subscribe(request, id):
         )
         follow_relation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def post_delete_logic(request, id):
+    # todo: избавиться от дубликации кода в функциях ниже
+    pass
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def add_delete_favorite(request, id):
+    recipe = get_object_or_404(Recipe, id=id)
+    if request.method == 'POST':
+        try:
+            Favorite.objects.create(
+                author=request.user,
+                recipe=recipe,
+            )
+            serializer = ShortRecipeSerializer(
+                recipe
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            return Response(
+                {'error': 'Рецепт уже добавлен в избранное'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    elif request.method == 'DELETE':
+        favorite = get_object_or_404(
+            Favorite,
+            author=request.user,
+            recipe=recipe,
+        )
+        favorite.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def add_delete_shoppingcart(request, id):
+    recipe = get_object_or_404(Recipe, id=id)
+    if request.method == 'POST':
+        try:
+            ShoppingCart.objects.create(
+                author=request.user,
+                recipe=recipe,
+            )
+            serializer = ShortRecipeSerializer(
+                recipe
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            return Response(
+                {'error': 'Рецепт уже добавлен в корзину'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    elif request.method == 'DELETE':
+        shopping_cart = get_object_or_404(
+            ShoppingCart,
+            author=request.user,
+            recipe=recipe,
+        )
+        shopping_cart.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TagViewSet(ListRetrieveMixin):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+
+class IngredientViewSet(ListRetrieveMixin):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+
+
+class RecipesViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
+
+    def update(self, request, *args, **kwargs):
+        raise MethodNotAllowed(method=request.method)
