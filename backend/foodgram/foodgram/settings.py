@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'djoser',
     'api.apps.ApiConfig',
-    'user.apps.UserConfig',
+    'users.apps.UserConfig',
 ]
 
 MIDDLEWARE = [
@@ -134,7 +134,7 @@ SWAGGER_SETTINGS = {
    }
 }
 
-AUTH_USER_MODEL = 'user.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
@@ -143,11 +143,11 @@ DJOSER = {
     'SEND_ACTIVATION_EMAIL': False,
     'SERIALIZERS': {
         'user_create': 'api.serializers.UserCreateSerializer',
-        'user': 'api.serializers.UserSerializer',
+        'users': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
     },
     'PERMISSIONS': {
-        'user': ['rest_framework.permissions.IsAuthenticated'],
+        'users': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.IsAuthenticated'],
         'current_user': ['rest_framework.permissions.IsAuthenticated'],
     }

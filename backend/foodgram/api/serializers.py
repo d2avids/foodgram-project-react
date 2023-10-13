@@ -1,8 +1,8 @@
 import djoser.serializers as djs
 from rest_framework import serializers
 
-from user.models import CustomUser
-from user.models import Follower
+from users.models import CustomUser
+from users.models import Follower
 
 
 class UserCreateSerializer(djs.UserCreateSerializer):
