@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from rest_framework import status
@@ -24,13 +25,7 @@ def subscriptions(request):
 @api_view(['POST', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def subscribe(request, id):
-    try:
-        following_user = CustomUser.objects.get(id=id)
-    except CustomUser.DoesNotExist:
-        return Response(
-            {'detail': 'Пользователь не найден'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    following_user = get_object_or_404(CustomUser, id=id)
 
     if request.method == 'POST':
         try:
@@ -54,15 +49,10 @@ def subscribe(request, id):
             )
 
     elif request.method == 'DELETE':
-        try:
-            follow_relation = Follower.objects.get(
-                followed_user=request.user,
-                following_user=following_user
-            )
-            follow_relation.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Follower.DoesNotExist:
-            return Response(
-                {'error': 'Вы не подписаны на данного пользователя'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        follow_relation = get_object_or_404(
+            Follower,
+            followed_user=request.user,
+            following_user=following_user,
+        )
+        follow_relation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
