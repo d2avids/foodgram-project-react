@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework import status, filters
 from rest_framework.response import Response
 from rest_framework import viewsets
@@ -152,6 +151,13 @@ def add_delete_shoppingcart(request, id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_shopping_cart(request):
+    shopping_cart = ShoppingCart.objects.filter(user=request.user).values_list('recipe_id', flat=True)
+    pass
+
+
 class TagViewSet(ListRetrieveMixin):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -194,11 +200,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(read_serializer.data)
         return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        write_serializer = RecipeWriteSerializer(instance,
+                                                 data=request.data,
+                                                 context={
+                                                     'request': request})
+        write_serializer.is_valid(raise_exception=True)
+        self.perform_update(write_serializer)
+
+        recipe = self.get_queryset().get(pk=instance.pk)
+
+        read_serializer = RecipeSerializer(recipe,
+                                           context={'request': request})
+
+        return Response(read_serializer.data, status=status.HTTP_200_OK)
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        raise MethodNotAllowed(method=request.method)
 
 
 class UserViewSet(UVS):

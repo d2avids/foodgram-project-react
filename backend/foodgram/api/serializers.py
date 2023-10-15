@@ -4,7 +4,8 @@ from rest_framework import serializers
 import djoser.serializers as djs
 
 from users.models import CustomUser, Follower
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, \
+    IngredientInRecipe
 
 
 class Base64ImageField(serializers.ImageField):
@@ -93,8 +94,25 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit',)
 
 
+class IngredientInRecipeSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+
+    class Meta:
+        model = IngredientInRecipe
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+
+
+class IngredientAmountSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    amount = serializers.IntegerField()
+
+
 class RecipeWriteSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
+    ingredients = IngredientAmountSerializer(many=True, write_only=True)
+
     class Meta:
         model = Recipe
         fields = (
@@ -109,13 +127,48 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('author',)
 
+    def create(self, validated_data):
+        tags_data = validated_data.pop('tags')
+        ingredients_data = validated_data.pop('ingredients')
+
+        recipe = Recipe.objects.create(**validated_data)
+
+        recipe.tags.set(tags_data)
+
+        for ingredient in ingredients_data:
+            IngredientInRecipe.objects.create(
+                recipe=recipe,
+                ingredient_id=ingredient['id'],
+                amount=ingredient['amount']
+            )
+        return recipe
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop('tags', instance.tags.all())
+        ingredients_data = validated_data.pop('ingredients', [])
+
+        instance = super().update(instance, validated_data)
+
+        instance.tags.set(tags_data)
+
+        instance.ingredient_amount.all().delete()
+
+        for ingredient_data in ingredients_data:
+            IngredientInRecipe.objects.create(
+                recipe=instance,
+                ingredient_id=ingredient_data['id'],
+                amount=ingredient_data['amount']
+            )
+
+        return instance
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(read_only=True, many=True)
-    ingredients = IngredientSerializer(read_only=True, many=True)
+    ingredients = IngredientInRecipeSerializer(source='ingredient_amount', many=True)  # Use the related name for the reverse relation
     author = UserSerializer(read_only=True)
 
     class Meta:
