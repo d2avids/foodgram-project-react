@@ -12,18 +12,36 @@ from users.models import Follower, CustomUser
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
 from .serializers import (UserSerializer, TagSerializer,
                           IngredientSerializer, RecipeSerializer,
-                          ShortRecipeSerializer)
+                          ShortRecipeSerializer, FollowingUserSerializer,
+                          RecipeWriteSerializer)
 from .mixins import ListRetrieveMixin
+from rest_framework.pagination import LimitOffsetPagination
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def subscriptions(request):
-    following_users = Follower.objects.filter(
+    try:
+        recipes_limit = int(request.query_params.get('recipes_limit', 3))
+    except ValueError:
+        recipes_limit = 3
+
+    following_users_ids = Follower.objects.filter(
         followed_user=request.user
     ).values_list('following_user', flat=True)
-    users = CustomUser.objects.filter(id__in=following_users)
-    serializer = UserSerializer(users, many=True, context={'request': request})
+    following_users = CustomUser.objects.filter(id__in=following_users_ids)
+
+    paginator = LimitOffsetPagination()
+    page = paginator.paginate_queryset(following_users, request)
+    if page is not None:
+        context = {
+            'request': request,
+            'recipes_limit': recipes_limit,
+        }
+        serializer = FollowingUserSerializer(page, many=True, context=context)
+        return paginator.get_paginated_response(serializer.data)
+
+    serializer = FollowingUserSerializer(following_users, many=True, context={'request': request, 'recipes_limit': recipes_limit})
     return Response(serializer.data)
 
 
@@ -38,7 +56,7 @@ def subscribe(request, id):
                 followed_user=request.user,
                 following_user=following_user
             )
-            serializer = UserSerializer(
+            serializer = FollowingUserSerializer(
                 following_user, context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -75,7 +93,7 @@ def add_delete_favorite(request, id):
     if request.method == 'POST':
         try:
             Favorite.objects.create(
-                author=request.user,
+                user=request.user,
                 recipe=recipe,
             )
             serializer = ShortRecipeSerializer(
@@ -91,7 +109,7 @@ def add_delete_favorite(request, id):
     elif request.method == 'DELETE':
         favorite = get_object_or_404(
             Favorite,
-            author=request.user,
+            user=request.user,
             recipe=recipe,
         )
         favorite.delete()
@@ -105,7 +123,7 @@ def add_delete_shoppingcart(request, id):
     if request.method == 'POST':
         try:
             ShoppingCart.objects.create(
-                author=request.user,
+                user=request.user,
                 recipe=recipe,
             )
             serializer = ShortRecipeSerializer(
@@ -121,7 +139,7 @@ def add_delete_shoppingcart(request, id):
     elif request.method == 'DELETE':
         shopping_cart = get_object_or_404(
             ShoppingCart,
-            author=request.user,
+            user=request.user,
             recipe=recipe,
         )
         shopping_cart.delete()
@@ -138,9 +156,30 @@ class IngredientViewSet(ListRetrieveMixin):
     serializer_class = IngredientSerializer
 
 
-class RecipesViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeWriteSerializer
+    pagination_class = LimitOffsetPagination
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return RecipeSerializer
+        return RecipeWriteSerializer
+
+    def create(self, request, *args, **kwargs):
+        write_serializer = RecipeWriteSerializer(data=request.data, context={'request': request})
+        write_serializer.is_valid(raise_exception=True)
+        self.perform_create(write_serializer)
+
+        recipe = self.get_queryset().get(pk=write_serializer.instance.pk)
+
+        read_serializer = RecipeSerializer(recipe, context={'request': request})
+
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
     def update(self, request, *args, **kwargs):
         raise MethodNotAllowed(method=request.method)

@@ -6,5 +6,3 @@ class ListRetrieveMixin(mixins.ListModelMixin,
                         mixins.RetrieveModelMixin,
                         GenericViewSet):
     pass
-
-

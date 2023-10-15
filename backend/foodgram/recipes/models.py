@@ -52,6 +52,12 @@ class Recipe(models.Model):
         to=Tag,
         related_name='tag_recipes'
     )
+    author = models.ForeignKey(
+        verbose_name='Автор',
+        to=CustomUser,
+        related_name='user_recipes',
+        on_delete=models.CASCADE
+    )
     image = models.ImageField(
         verbose_name='Картинка',
         upload_to='ingredients/images/'

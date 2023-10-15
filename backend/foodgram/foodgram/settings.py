@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     'drf_yasg',
     'djoser',
     'api.apps.ApiConfig',
@@ -100,7 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -126,7 +127,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-       'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ]
 }
 
@@ -148,9 +149,9 @@ DJOSER = {
     'HIDE_USERS': False,
     'SEND_ACTIVATION_EMAIL': False,
     'SERIALIZERS': {
-        'user_create': 'api.serializers.UserCreateSerializer',
-        'users': 'api.serializers.UserSerializer',
+        'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
+        'user_create': 'api.serializers.UserCreateSerializer',
     },
     'PERMISSIONS': {
         'users': ['rest_framework.permissions.IsAuthenticated'],
