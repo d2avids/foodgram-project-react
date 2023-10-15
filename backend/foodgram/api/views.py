@@ -7,13 +7,14 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from djoser.views import UserViewSet as UVS
 
 from users.models import Follower, CustomUser
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
 from .serializers import (TagSerializer,
                           IngredientSerializer, RecipeSerializer,
                           ShortRecipeSerializer, FollowingUserSerializer,
-                          RecipeWriteSerializer)
+                          RecipeWriteSerializer, UserSerializer)
 from .mixins import ListRetrieveMixin
 from .filters import RecipeFilter
 from rest_framework.pagination import LimitOffsetPagination
@@ -198,3 +199,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         raise MethodNotAllowed(method=request.method)
+
+
+class UserViewSet(UVS):
+    serializer_class = UserSerializer
+    pagination_class = LimitOffsetPagination

@@ -3,11 +3,12 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (subscribe, subscriptions, TagViewSet,
                     IngredientViewSet, RecipeViewSet, add_delete_favorite,
-                    add_delete_shoppingcart)
+                    add_delete_shoppingcart, UserViewSet)
 
 
 router = DefaultRouter()
 router.register('tags', TagViewSet, basename='tag')
+router.register('users', UserViewSet, basename='user')
 router.register('ingredients', IngredientViewSet, basename='ingredient')
 router.register('recipes', RecipeViewSet, basename='recipe')
 
