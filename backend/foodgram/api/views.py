@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from rest_framework.exceptions import MethodNotAllowed
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -10,11 +10,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from users.models import Follower, CustomUser
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
-from .serializers import (UserSerializer, TagSerializer,
+from .serializers import (TagSerializer,
                           IngredientSerializer, RecipeSerializer,
                           ShortRecipeSerializer, FollowingUserSerializer,
                           RecipeWriteSerializer)
 from .mixins import ListRetrieveMixin
+from .filters import RecipeFilter
 from rest_framework.pagination import LimitOffsetPagination
 
 
@@ -41,7 +42,11 @@ def subscriptions(request):
         serializer = FollowingUserSerializer(page, many=True, context=context)
         return paginator.get_paginated_response(serializer.data)
 
-    serializer = FollowingUserSerializer(following_users, many=True, context={'request': request, 'recipes_limit': recipes_limit})
+    serializer = FollowingUserSerializer(
+        following_users,
+        many=True,
+        context={'request': request, 'recipes_limit': recipes_limit}
+    )
     return Response(serializer.data)
 
 
@@ -154,12 +159,22 @@ class TagViewSet(ListRetrieveMixin):
 class IngredientViewSet(ListRetrieveMixin):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeWriteSerializer
     pagination_class = LimitOffsetPagination
+    filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        filterset = self.filterset_class(
+            self.request.GET, queryset=queryset, request=self.request
+        )
+        return filterset.qs
 
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
