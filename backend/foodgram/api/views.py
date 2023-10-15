@@ -1,15 +1,20 @@
+import csv
+
 from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
 from rest_framework import status, filters
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from djoser.views import UserViewSet as UVS
+from djoser.views import UserViewSet as Uvs
 
 from users.models import Follower, CustomUser
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, \
+    IngredientInRecipe
+from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (TagSerializer,
                           IngredientSerializer, RecipeSerializer,
                           ShortRecipeSerializer, FollowingUserSerializer,
@@ -154,8 +159,30 @@ def add_delete_shoppingcart(request, id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
-    shopping_cart = ShoppingCart.objects.filter(user=request.user).values_list('recipe_id', flat=True)
-    pass
+    shopping_cart = ShoppingCart.objects.filter(
+        user=request.user
+    ).values_list('recipe_id', flat=True)
+    ingredient_list = {}
+    ingredients = IngredientInRecipe.objects.filter(
+        recipe_id__in=shopping_cart
+    ).values_list('amount', 'ingredient__measurement_unit', 'ingredient__name')
+    for amount, measurement_unit, name in ingredients:
+        if name in ingredient_list:
+            ingredient_list[name] = (
+                ingredient_list[name][0] + amount, measurement_unit
+            )
+        else:
+            ingredient_list[name] = (amount, measurement_unit)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="Ингредиенты.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Ingredient', 'Amount', 'Measurement Unit'])
+    for ingredient, values in ingredient_list.items():
+        amount, measurement_unit = values
+        writer.writerow([ingredient, amount, measurement_unit])
+
+    return response
 
 
 class TagViewSet(ListRetrieveMixin):
@@ -175,6 +202,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeWriteSerializer
     pagination_class = LimitOffsetPagination
     filterset_class = RecipeFilter
+    permission_classes = (IsAuthorAdminOrReadOnly,)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -189,16 +217,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeWriteSerializer
 
     def create(self, request, *args, **kwargs):
-        write_serializer = RecipeWriteSerializer(data=request.data, context={'request': request})
+        write_serializer = RecipeWriteSerializer(
+            data=request.data, context={'request': request}
+        )
         write_serializer.is_valid(raise_exception=True)
         self.perform_create(write_serializer)
 
         recipe = self.get_queryset().get(pk=write_serializer.instance.pk)
 
-        read_serializer = RecipeSerializer(recipe, context={'request': request})
+        read_serializer = RecipeSerializer(
+            recipe, context={'request': request}
+        )
 
         headers = self.get_success_headers(read_serializer.data)
-        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            read_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -221,6 +257,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
 
-class UserViewSet(UVS):
+class UserViewSet(Uvs):
     serializer_class = UserSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (IsAuthorAdminOrReadOnly,)
