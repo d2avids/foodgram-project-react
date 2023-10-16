@@ -1,0 +1,8 @@
+DEBUG=value
+SECRET_KEY=value
+ALLOWED_HOSTS=value,value,value
+POSTGRES_USER=value
+POSTGRES_PASSWORD=value
+POSTGRES_DB=value
+DB_HOST=value
+DB_PORT=value

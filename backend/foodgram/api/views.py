@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as Uvs
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +17,6 @@ from users.models import CustomUser, Follower
 
 from .filters import RecipeFilter
 from .mixins import ListRetrieveMixin
-from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FollowingUserSerializer, IngredientSerializer,
                           RecipeSerializer, RecipeWriteSerializer,
                           TagSerializer, UserSerializer)
@@ -149,9 +148,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeWriteSerializer
     pagination_class = LimitOffsetPagination
     filterset_class = RecipeFilter
-    permission_classes = (IsAuthorAdminOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
+        print("get_queryset called")  # New print statement
         queryset = super().get_queryset()
         filterset = self.filterset_class(
             self.request.GET, queryset=queryset, request=self.request
@@ -162,6 +162,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return RecipeSerializer
         return RecipeWriteSerializer
+
+    def list(self, request, *args, **kwargs):
+        print("list method called")  # New print statement
+        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         write_serializer = RecipeWriteSerializer(
@@ -207,4 +211,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class UserViewSet(Uvs):
     serializer_class = UserSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAuthorAdminOrReadOnly,)

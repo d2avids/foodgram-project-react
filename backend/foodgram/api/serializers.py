@@ -46,9 +46,11 @@ class UserSerializer(djs.UserSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        return Follower.objects.filter(
-            followed_user=request.user, following_user=obj
-        ).exists()
+        if request.user.is_authenticated:
+            return Follower.objects.filter(
+                followed_user=request.user, following_user=obj
+            ).exists()
+        return False
 
 
 class UserCreateSerializer(djs.UserCreateSerializer):
@@ -193,12 +195,16 @@ class RecipeSerializer(serializers.ModelSerializer):
         read_only_fields = ('author', 'is_favorited', 'is_in_shopping_cart',)
 
     def get_is_favorited(self, obj):
-        recipe_id = obj.id
         user = self.context.get('request').user
-        return Favorite.objects.filter(user=user, recipe=recipe_id).exists()
+        if user.is_authenticated:
+            recipe_id = obj.id
+            return Favorite.objects.filter(user=user, recipe=recipe_id).exists()
+        return False
 
     def get_is_in_shopping_cart(self, obj):
-        recipe_id = obj.id
         user = self.context.get('request').user
-        return ShoppingCart.objects.filter(
-            user=user, recipe=recipe_id).exists()
+        if user.is_authenticated:
+            recipe_id = obj.id
+            return ShoppingCart.objects.filter(
+                user=user, recipe=recipe_id).exists()
+        return False
