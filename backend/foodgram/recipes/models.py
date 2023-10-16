@@ -71,7 +71,7 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='Описание'
     )
-    coocking_time = models.IntegerField(
+    cooking_time = models.IntegerField(
         verbose_name='Время приготовления',
         validators=[MinValueValidator(1)]
     )
