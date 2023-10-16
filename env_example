@@ -1,4 +1,4 @@
-DEBUG=value # also affects database: if true - sqlite, false - postgresql
+DEBUG=value # (also affects database: if true - sqlite, false - postgresql)
 SECRET_KEY=value
 ALLOWED_HOSTS=value,value,value
 POSTGRES_USER=value
