@@ -20,7 +20,8 @@ from .mixins import ListRetrieveMixin
 from .permissions import IsAuthorAdminOrReadOnly
 from .serializers import (FollowingUserSerializer, IngredientSerializer,
                           RecipeSerializer, RecipeWriteSerializer,
-                          ShortRecipeSerializer, TagSerializer, UserSerializer)
+                          TagSerializer, UserSerializer)
+from .utils import post_delete_logic
 
 
 @api_view(['GET'])
@@ -90,69 +91,16 @@ def subscribe(request, id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-def post_delete_logic(request, id):
-    # todo: избавиться от дубликации кода в функциях ниже
-    pass
-
-
 @api_view(['POST', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def add_delete_favorite(request, id):
-    recipe = get_object_or_404(Recipe, id=id)
-    if request.method == 'POST':
-        try:
-            Favorite.objects.create(
-                user=request.user,
-                recipe=recipe,
-            )
-            serializer = ShortRecipeSerializer(
-                recipe
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except IntegrityError:
-            return Response(
-                {'error': 'Рецепт уже добавлен в избранное'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-    elif request.method == 'DELETE':
-        favorite = get_object_or_404(
-            Favorite,
-            user=request.user,
-            recipe=recipe,
-        )
-        favorite.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    return post_delete_logic(request, id, Favorite, 'избранное')
 
 
 @api_view(['POST', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def add_delete_shoppingcart(request, id):
-    recipe = get_object_or_404(Recipe, id=id)
-    if request.method == 'POST':
-        try:
-            ShoppingCart.objects.create(
-                user=request.user,
-                recipe=recipe,
-            )
-            serializer = ShortRecipeSerializer(
-                recipe
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except IntegrityError:
-            return Response(
-                {'error': 'Рецепт уже добавлен в корзину'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-    elif request.method == 'DELETE':
-        shopping_cart = get_object_or_404(
-            ShoppingCart,
-            user=request.user,
-            recipe=recipe,
-        )
-        shopping_cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    return post_delete_logic(request, id, ShoppingCart, 'корзину')
 
 
 @api_view(['GET'])
