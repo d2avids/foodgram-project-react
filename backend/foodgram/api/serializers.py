@@ -128,7 +128,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'image',
             'name',
             'text',
-            'coocking_time',
+            'cooking_time',
         )
         read_only_fields = ('author',)
 
