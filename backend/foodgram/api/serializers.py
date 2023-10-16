@@ -1,11 +1,12 @@
 import base64
+
+import djoser.serializers as djs
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-import djoser.serializers as djs
 
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
 from users.models import CustomUser, Follower
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, \
-    IngredientInRecipe
 
 
 class Base64ImageField(serializers.ImageField):
@@ -97,7 +98,9 @@ class IngredientSerializer(serializers.ModelSerializer):
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
 
     class Meta:
         model = IngredientInRecipe
@@ -168,7 +171,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     tags = TagSerializer(read_only=True, many=True)
-    ingredients = IngredientInRecipeSerializer(source='ingredient_amount', many=True)  # Use the related name for the reverse relation
+    ingredients = IngredientInRecipeSerializer(
+        source='ingredient_amount', many=True
+    )
     author = UserSerializer(read_only=True)
 
     class Meta:

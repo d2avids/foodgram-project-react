@@ -1,27 +1,26 @@
 import csv
 
-from django.shortcuts import get_object_or_404
-from django.db import IntegrityError
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.http import HttpResponse
-from rest_framework import status, filters
-from rest_framework.response import Response
-from rest_framework import viewsets
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as Uvs
-
-from users.models import Follower, CustomUser
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, \
-    IngredientInRecipe
-from .permissions import IsAuthorAdminOrReadOnly
-from .serializers import (TagSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          ShortRecipeSerializer, FollowingUserSerializer,
-                          RecipeWriteSerializer, UserSerializer)
-from .mixins import ListRetrieveMixin
-from .filters import RecipeFilter
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
+from users.models import CustomUser, Follower
+
+from .filters import RecipeFilter
+from .mixins import ListRetrieveMixin
+from .permissions import IsAuthorAdminOrReadOnly
+from .serializers import (FollowingUserSerializer, IngredientSerializer,
+                          RecipeSerializer, RecipeWriteSerializer,
+                          ShortRecipeSerializer, TagSerializer, UserSerializer)
 
 
 @api_view(['GET'])
