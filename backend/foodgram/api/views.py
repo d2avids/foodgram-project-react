@@ -37,7 +37,7 @@ def subscriptions(request):
     ).values_list('following_user', flat=True)
     following_users = CustomUser.objects.filter(id__in=following_users_ids)
 
-    paginator = LimitOffsetPagination()
+    paginator = PageNumberLimitPagination()
     page = paginator.paginate_queryset(following_users, request)
     if page is not None:
         context = {
