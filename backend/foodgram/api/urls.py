@@ -14,10 +14,10 @@ router.register('recipes', RecipeViewSet, basename='recipe')
 urlpatterns = [
     path('users/subscriptions/', subscriptions, name='subscription_list'),
     path('users/<int:id>/subscribe/', subscribe, name='subscribe'),
+    path('recipes/download_shopping_cart/', download_shopping_cart,
+         name='download-shoppingcart'),
     path('', include(router.urls)),
     path('', include('djoser.urls')),
-    path('download_shopping_cart/', download_shopping_cart,
-         name='download-shoppingcart'),
     path('recipes/<int:id>/favorite/', add_delete_favorite,
          name='add-delete-favorite'),
     path('recipes/<int:id>/shopping_cart/', add_delete_shoppingcart,

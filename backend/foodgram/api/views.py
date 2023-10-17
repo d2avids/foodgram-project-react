@@ -156,22 +156,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def get_queryset(self):
-        print("get_queryset called")  # New print statement
-        queryset = super().get_queryset()
-        filterset = self.filterset_class(
-            self.request.GET, queryset=queryset, request=self.request
-        )
-        return filterset.qs
-
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
             return RecipeSerializer
         return RecipeWriteSerializer
-
-    def list(self, request, *args, **kwargs):
-        print("list method called")  # New print statement
-        return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         write_serializer = RecipeWriteSerializer(
