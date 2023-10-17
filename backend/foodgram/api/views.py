@@ -1,9 +1,8 @@
 import datetime
-from tempfile import NamedTemporaryFile
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.http import FileResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as Uvs
 from rest_framework import filters, status, viewsets, permissions
@@ -106,7 +105,9 @@ def add_delete_shoppingcart(request, id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
-    shopping_cart = ShoppingCart.objects.filter(user=request.user).values_list('recipe_id', flat=True)
+    shopping_cart = ShoppingCart.objects.filter(
+        user=request.user
+    ).values_list('recipe_id', flat=True)
 
     ingredient_list = {}
     ingredients = IngredientInRecipe.objects.filter(
