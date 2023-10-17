@@ -4,8 +4,9 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as Uvs
-from rest_framework import filters, status, viewsets, permissions
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +16,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import CustomUser, Follower
 
-from .filters import RecipeFilter
+from .filters import IngredientFilter, RecipeFilter, TagFilter
 from .mixins import ListRetrieveMixin
 from .serializers import (FollowingUserSerializer, IngredientSerializer,
                           RecipeSerializer, RecipeWriteSerializer,
@@ -141,19 +142,22 @@ def download_shopping_cart(request):
 class TagViewSet(ListRetrieveMixin):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TagFilter
 
 
 class IngredientViewSet(ListRetrieveMixin):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeWriteSerializer
     pagination_class = LimitOffsetPagination
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
