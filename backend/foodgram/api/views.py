@@ -1,8 +1,9 @@
 import csv
+from tempfile import NamedTemporaryFile
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as Uvs
 from rest_framework import filters, status, viewsets, permissions
@@ -105,12 +106,9 @@ def add_delete_shoppingcart(request, id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
-    shopping_cart = ShoppingCart.objects.filter(
-        user=request.user
-    ).values_list('recipe_id', flat=True)
+    shopping_cart = ShoppingCart.objects.filter(user=request.user).values_list('recipe_id', flat=True)
 
     ingredient_list = {}
-
     ingredients = IngredientInRecipe.objects.filter(
         recipe_id__in=shopping_cart).values_list(
         'amount', 'ingredient__measurement_unit', 'ingredient__name'
@@ -124,18 +122,22 @@ def download_shopping_cart(request):
         else:
             ingredient_list[name] = (amount, measurement_unit)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="Ingredients.csv"'
+    # Create a temporary file and write the CSV data into it
+    with NamedTemporaryFile(delete=False, mode='w+', suffix='.csv', encoding='utf-8') as temp_file:
+        writer = csv.writer(temp_file)
+        writer.writerow(['Ingredient', 'Amount', 'Measurement Unit'])
+        for name, (amount, measurement_unit) in ingredient_list.items():
+            writer.writerow([name, amount, measurement_unit])
 
-    writer = csv.writer(
-        response, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL
-    )
-    writer.writerow(['Ingredient', 'Amount', 'Measurement Unit'])
-    for ingredient, values in ingredient_list.items():
-        amount, measurement_unit = values
-        writer.writerow([ingredient, amount, measurement_unit])
+        temp_file_path = temp_file.name
+
+    # Clean up temporary file when done
+    response = FileResponse(open(temp_file_path, 'rb'), as_attachment=True, filename='shopping_cart.csv')
+    response['Content-Disposition'] = 'attachment; filename="shopping_cart.csv"'
 
     return response
+
+
 
 
 class TagViewSet(ListRetrieveMixin):
