@@ -1,4 +1,4 @@
-import csv
+import datetime
 from tempfile import NamedTemporaryFile
 
 from django.core.exceptions import ValidationError
@@ -122,22 +122,19 @@ def download_shopping_cart(request):
         else:
             ingredient_list[name] = (amount, measurement_unit)
 
-    # Create a temporary file and write the CSV data into it
-    with NamedTemporaryFile(delete=False, mode='w+', suffix='.csv', encoding='utf-8') as temp_file:
-        writer = csv.writer(temp_file)
-        writer.writerow(['Ingredient', 'Amount', 'Measurement Unit'])
-        for name, (amount, measurement_unit) in ingredient_list.items():
-            writer.writerow([name, amount, measurement_unit])
+    shopping_list_content = []
+    for ingredient, (amount, unit) in ingredient_list.items():
+        shopping_list_content.append(f"{ingredient}: {amount} {unit}\n")
 
-        temp_file_path = temp_file.name
+    shopping_list_string = ''.join(shopping_list_content)
 
-    # Clean up temporary file when done
-    response = FileResponse(open(temp_file_path, 'rb'), as_attachment=True, filename='shopping_cart.csv')
-    response['Content-Disposition'] = 'attachment; filename="shopping_cart.csv"'
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    file_name = f"{request.user.username}_{today}_shopping_list.txt"
+
+    response = HttpResponse(shopping_list_string, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename={file_name}'
 
     return response
-
-
 
 
 class TagViewSet(ListRetrieveMixin):

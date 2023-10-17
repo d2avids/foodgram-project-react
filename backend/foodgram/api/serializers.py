@@ -25,7 +25,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'image',
-            'coocking_time',
+            'cooking_time',
         )
 
 
