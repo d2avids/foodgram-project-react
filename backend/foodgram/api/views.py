@@ -8,7 +8,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as Uvs
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -16,6 +15,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import CustomUser, Follower
 
+from .paginators import PageNumberLimitPagination
 from .filters import IngredientFilter, RecipeFilter, TagFilter
 from .mixins import ListRetrieveMixin
 from .serializers import (FollowingUserSerializer, IngredientSerializer,
@@ -156,7 +156,7 @@ class IngredientViewSet(ListRetrieveMixin):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeWriteSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberLimitPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -209,4 +209,4 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(Uvs):
     serializer_class = UserSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberLimitPagination
