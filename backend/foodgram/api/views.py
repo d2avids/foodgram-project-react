@@ -108,10 +108,14 @@ def download_shopping_cart(request):
     shopping_cart = ShoppingCart.objects.filter(
         user=request.user
     ).values_list('recipe_id', flat=True)
+
     ingredient_list = {}
+
     ingredients = IngredientInRecipe.objects.filter(
-        recipe_id__in=shopping_cart
-    ).values_list('amount', 'ingredient__measurement_unit', 'ingredient__name')
+        recipe_id__in=shopping_cart).values_list(
+        'amount', 'ingredient__measurement_unit', 'ingredient__name'
+    )
+
     for amount, measurement_unit, name in ingredients:
         if name in ingredient_list:
             ingredient_list[name] = (
@@ -119,10 +123,13 @@ def download_shopping_cart(request):
             )
         else:
             ingredient_list[name] = (amount, measurement_unit)
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="Ингредиенты.csv"'
 
-    writer = csv.writer(response)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="Ingredients.csv"'
+
+    writer = csv.writer(
+        response, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL
+    )
     writer.writerow(['Ingredient', 'Amount', 'Measurement Unit'])
     for ingredient, values in ingredient_list.items():
         amount, measurement_unit = values
