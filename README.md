@@ -55,15 +55,15 @@ DEBUG=False
 Запустить docker-compose.production:
 
 ```
-docker compose -f docker-compose.production.yml up
+docker compose up
 ```
 
 Выполнить миграции, собрать статику бэкенда:
 
 ```
-docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
-docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py collectstatic
+docker compose exec backend cp -r /app/collected_static/. /backend_static/static/
 
 ```
 
