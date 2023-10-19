@@ -12,6 +12,7 @@ class IngredientAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_filter = ('name',)
+    min_num = 1
 
 
 class IngredientInRecipeInline(admin.StackedInline):

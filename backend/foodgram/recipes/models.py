@@ -1,7 +1,8 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from users.models import CustomUser
+from django.conf import settings
 
 
 class Ingredient(models.Model):
@@ -15,6 +16,7 @@ class Ingredient(models.Model):
     )
 
     class Meta:
+        ordering = ('name',)
         verbose_name = "Ингредиент"
         verbose_name_plural = "Ингредиенты"
 
@@ -33,9 +35,13 @@ class Tag(models.Model):
         verbose_name='Цвет',
         max_length=16
     )
-    slug = models.CharField(max_length=16)
+    slug = models.CharField(
+        verbose_name='Слаг',
+        max_length=16
+    )
 
     class Meta:
+        ordering = ('name',)
         verbose_name = "Тэг"
         verbose_name_plural = "Тэги"
 
@@ -71,12 +77,16 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='Описание'
     )
-    cooking_time = models.IntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=[MinValueValidator(1)]
+        validators=[
+            MinValueValidator(settings.INT_MIN_VALUE),
+            MaxValueValidator(settings.INT_MAX_VALUE)
+        ]
     )
 
     class Meta:
+        ordering = ('username',)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
 
@@ -99,6 +109,7 @@ class Favorite(models.Model):
     )
 
     class Meta:
+        ordering = ('-user',)
         unique_together = ['user', 'recipe']
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
@@ -125,6 +136,7 @@ class ShoppingCart(models.Model):
     )
 
     class Meta:
+        ordering = ('-user',)
         unique_together = ['user', 'recipe']
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
@@ -149,13 +161,16 @@ class IngredientInRecipe(models.Model):
         related_name='ingredient_in_recipes',
         on_delete=models.CASCADE,
     )
-    amount = models.IntegerField(
+    amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        null=True,
-        blank=True
+        validators=[
+            MinValueValidator[settings.INT_MIN_VALUE],
+            MaxValueValidator[settings.INT_MAX_VALUE]
+        ]
     )
 
     class Meta:
+        ordering = ('-recipe',)
         verbose_name = 'Ингридиенты в рецепте'
         verbose_name_plural = 'Ингридиенты в рецепте'
 

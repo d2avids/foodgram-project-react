@@ -30,7 +30,7 @@ def post_delete_logic(request, id, instance, add_to: str):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    elif request.method == 'DELETE':
+    if request.method == 'DELETE':
         instace_to_delete = get_object_or_404(
             instance,
             user=request.user,

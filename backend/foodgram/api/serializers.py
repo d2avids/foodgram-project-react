@@ -2,7 +2,9 @@ import base64
 
 import djoser.serializers as djs
 from django.core.files.base import ContentFile
+from django.db import transaction
 from rest_framework import serializers
+from django.conf import settings
 
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -45,7 +47,7 @@ class UserSerializer(djs.UserSerializer):
         ref_name = 'CustomUserSerializer'
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
+        request = self.context['request']
         if request.user.is_authenticated:
             return Follower.objects.filter(
                 followed_user=request.user, following_user=obj
@@ -74,15 +76,15 @@ class FollowingUserSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count',)
 
     def get_recipes(self, obj):
-        recipes_limit = self.context.get('recipes_limit')
-        recipes = Recipe.objects.filter(author=obj)
+        recipes_limit = self.context['recipes_limit']
+        recipes = obj.user_recipes.all()
         serializer = ShortRecipeSerializer(
             recipes[:recipes_limit], many=True, context=self.context
         )
         return serializer.data
 
     def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj).count()
+        return obj.user_recipes.all().count()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -111,12 +113,19 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
 class IngredientAmountSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    amount = serializers.IntegerField()
+    amount = serializers.IntegerField(
+        min_value=settings.INT_MIN_VALUE,
+        max_value=settings.INT_MAX_VALUE
+    )
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
     ingredients = IngredientAmountSerializer(many=True, write_only=True)
+    cooking_time = serializers.IntegerField(
+        min_value=settings.INT_MIN_VALUE,
+        max_value=settings.INT_MAX_VALUE
+    )
 
     class Meta:
         model = Recipe
@@ -136,34 +145,41 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         ingredients_data = validated_data.pop('ingredients')
 
-        recipe = Recipe.objects.create(**validated_data)
+        with transaction.atomic():
+            recipe = Recipe.objects.create(**validated_data)
+            recipe.tags.set(tags_data)
 
-        recipe.tags.set(tags_data)
+            new_ingredients = [
+                IngredientInRecipe(
+                    recipe=recipe,
+                    ingredient_id=ingredient['id'],
+                    amount=ingredient['amount']
+                ) for ingredient in ingredients_data
+            ]
 
-        for ingredient in ingredients_data:
-            IngredientInRecipe.objects.create(
-                recipe=recipe,
-                ingredient_id=ingredient['id'],
-                amount=ingredient['amount']
-            )
+            IngredientInRecipe.objects.bulk_create(new_ingredients)
+
         return recipe
 
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', instance.tags.all())
         ingredients_data = validated_data.pop('ingredients', [])
 
-        instance = super().update(instance, validated_data)
+        with transaction.atomic():
+            instance = super().update(instance, validated_data)
+            instance.tags.set(tags_data)
 
-        instance.tags.set(tags_data)
+            instance.ingredient_amount.all().delete()
 
-        instance.ingredient_amount.all().delete()
+            new_ingredients = [
+                IngredientInRecipe(
+                    recipe=instance,
+                    ingredient_id=ingredient_data['id'],
+                    amount=ingredient_data['amount']
+                ) for ingredient_data in ingredients_data
+            ]
 
-        for ingredient_data in ingredients_data:
-            IngredientInRecipe.objects.create(
-                recipe=instance,
-                ingredient_id=ingredient_data['id'],
-                amount=ingredient_data['amount']
-            )
+            IngredientInRecipe.objects.bulk_create(new_ingredients)
 
         return instance
 
@@ -195,18 +211,19 @@ class RecipeSerializer(serializers.ModelSerializer):
         read_only_fields = ('author', 'is_favorited', 'is_in_shopping_cart',)
 
     def get_is_favorited(self, obj):
-        user = self.context.get('request').user
+        user = self.context['request'].user
         if user.is_authenticated:
             recipe_id = obj.id
-            return Favorite.objects.filter(
-                user=user, recipe=recipe_id
+            return user.user_recipes.filter(
+                recipe=recipe_id
             ).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
+        user = self.context['request'].user
         if user.is_authenticated:
             recipe_id = obj.id
-            return ShoppingCart.objects.filter(
-                user=user, recipe=recipe_id).exists()
+            return user.user_recipes.filter(
+                recipe=recipe_id
+            ).exists()
         return False

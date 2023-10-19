@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from foodgram.settings import AUTH_USER_MODEL
+from django.conf import settings
 
 
 class CustomUser(AbstractUser):
@@ -26,6 +26,7 @@ class CustomUser(AbstractUser):
     )
 
     class Meta:
+        ordering = ('username',)
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
 
@@ -35,17 +36,18 @@ class CustomUser(AbstractUser):
 
 class Follower(models.Model):
     followed_user = models.ForeignKey(
-        AUTH_USER_MODEL,
+        settings.AUTH_USER_MODEL,
         related_name='following',
         on_delete=models.CASCADE
     )
     following_user = models.ForeignKey(
-        AUTH_USER_MODEL,
+        settings.AUTH_USER_MODEL,
         related_name='followers',
         on_delete=models.CASCADE
     )
 
     class Meta:
+        ordering = ('-followed_user',)
         unique_together = [['followed_user', 'following_user']]
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"

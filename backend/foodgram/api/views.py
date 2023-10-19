@@ -32,9 +32,9 @@ def subscriptions(request):
     except ValueError:
         recipes_limit = 3
 
-    following_users_ids = Follower.objects.filter(
-        followed_user=request.user
-    ).values_list('following_user', flat=True)
+    following_users_ids = request.user.following.values_list(
+        'following_user', flat=True
+    )
     following_users = CustomUser.objects.filter(id__in=following_users_ids)
 
     paginator = PageNumberLimitPagination()
@@ -81,7 +81,7 @@ def subscribe(request, id):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    elif request.method == 'DELETE':
+    if request.method == 'DELETE':
         follow_relation = get_object_or_404(
             Follower,
             followed_user=request.user,
@@ -106,13 +106,13 @@ def add_delete_shoppingcart(request, id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
-    shopping_cart = ShoppingCart.objects.filter(
-        user=request.user
-    ).values_list('recipe_id', flat=True)
+    shopping_cart_recipe_ids = request.user.shoppingcart_user.values_list(
+        'recipe_id', flat=True
+    )
 
     ingredient_list = {}
     ingredients = IngredientInRecipe.objects.filter(
-        recipe_id__in=shopping_cart).values_list(
+        recipe_id__in=shopping_cart_recipe_ids).values_list(
         'amount', 'ingredient__measurement_unit', 'ingredient__name'
     )
 
