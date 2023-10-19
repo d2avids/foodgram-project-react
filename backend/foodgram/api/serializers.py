@@ -1,13 +1,13 @@
 import base64
 
 import djoser.serializers as djs
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
-from django.conf import settings
 
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
+from recipes.models import (Ingredient, IngredientInRecipe, Recipe,
+                            Tag)
 from users.models import CustomUser, Follower
 
 

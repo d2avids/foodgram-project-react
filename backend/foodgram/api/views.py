@@ -15,9 +15,9 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import CustomUser, Follower
 
-from .paginators import PageNumberLimitPagination
 from .filters import IngredientFilter, RecipeFilter, TagFilter
 from .mixins import ListRetrieveMixin
+from .paginators import PageNumberLimitPagination
 from .serializers import (FollowingUserSerializer, IngredientSerializer,
                           RecipeSerializer, RecipeWriteSerializer,
                           TagSerializer, UserSerializer)
