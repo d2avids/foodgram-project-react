@@ -86,7 +86,7 @@ class Recipe(models.Model):
     )
 
     class Meta:
-        ordering = ('username',)
+        ordering = ('name',)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
 
@@ -164,8 +164,8 @@ class IngredientInRecipe(models.Model):
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
         validators=[
-            MinValueValidator[settings.INT_MIN_VALUE],
-            MaxValueValidator[settings.INT_MAX_VALUE]
+            MinValueValidator(settings.INT_MIN_VALUE),
+            MaxValueValidator(settings.INT_MAX_VALUE)
         ]
     )
 
