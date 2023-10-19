@@ -76,7 +76,7 @@ class FollowingUserSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count',)
 
     def get_recipes(self, obj):
-        recipes_limit = self.context['recipes_limit']
+        recipes_limit = self.context.get('recipes_limit')
         recipes = obj.user_recipes.all()
         serializer = ShortRecipeSerializer(
             recipes[:recipes_limit], many=True, context=self.context
@@ -215,7 +215,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             recipe_id = obj.id
             return user.user_recipes.filter(
-                recipe=recipe_id
+                favorite_recipe=recipe_id
             ).exists()
         return False
 
@@ -224,6 +224,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             recipe_id = obj.id
             return user.user_recipes.filter(
-                recipe=recipe_id
+                shoppingcart_recipe=recipe_id
             ).exists()
         return False
