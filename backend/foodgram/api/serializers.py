@@ -140,7 +140,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         read_only_fields = ('author',)
 
     def create_or_update_ingredients(self, recipe, ingredients_data):
-        recipe.ingredient_amount.all().delete()  # Clears existing ingredients
+        recipe.ingredient_amount.all().delete()
 
         new_ingredients = [
             IngredientInRecipe(
@@ -206,17 +206,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
-            recipe_id = obj.id
-            return user.user_recipes.filter(
-                favorite_recipe=recipe_id
-            ).exists()
+            return obj.favorite_recipe.filter(user=user).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
             recipe_id = obj.id
-            return user.user_recipes.filter(
-                shoppingcart_recipe=recipe_id
-            ).exists()
+            return obj.shoppingcart_recipe.filter(user=user).exists()
         return False

@@ -1,5 +1,5 @@
-# Kittygram
-![Kittygram Deploy Badge](https://github.com/d2avids/foodgram-project-react/actions/workflows/main.yml/badge.svg)
+# Foodgram
+![Foodgram Deploy Badge](https://github.com/d2avids/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 
 ## Описание проекта
