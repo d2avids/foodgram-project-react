@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from recipes.models import (Ingredient, IngredientInRecipe, Recipe,
                             Tag)
-from users.models import CustomUser, Follower
+from users.models import CustomUser
 
 
 class Base64ImageField(serializers.ImageField):
@@ -212,6 +212,5 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
-            recipe_id = obj.id
             return obj.shoppingcart_recipe.filter(user=user).exists()
         return False
