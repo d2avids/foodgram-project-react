@@ -49,9 +49,7 @@ class UserSerializer(djs.UserSerializer):
     def get_is_subscribed(self, obj):
         request = self.context['request']
         if request.user.is_authenticated:
-            return Follower.objects.filter(
-                followed_user=request.user, following_user=obj
-            ).exists()
+            return obj.followers.filter(following_user=request.user).exists()
         return False
 
 
@@ -141,6 +139,19 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('author',)
 
+    def create_or_update_ingredients(self, recipe, ingredients_data):
+        recipe.ingredient_amount.all().delete()  # Clears existing ingredients
+
+        new_ingredients = [
+            IngredientInRecipe(
+                recipe=recipe,
+                ingredient_id=ingredient_data['id'],
+                amount=ingredient_data['amount']
+            ) for ingredient_data in ingredients_data
+        ]
+
+        IngredientInRecipe.objects.bulk_create(new_ingredients)
+
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
         ingredients_data = validated_data.pop('ingredients')
@@ -149,15 +160,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             recipe = Recipe.objects.create(**validated_data)
             recipe.tags.set(tags_data)
 
-            new_ingredients = [
-                IngredientInRecipe(
-                    recipe=recipe,
-                    ingredient_id=ingredient['id'],
-                    amount=ingredient['amount']
-                ) for ingredient in ingredients_data
-            ]
-
-            IngredientInRecipe.objects.bulk_create(new_ingredients)
+            self.create_or_update_ingredients(recipe, ingredients_data)
 
         return recipe
 
@@ -169,17 +172,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             instance = super().update(instance, validated_data)
             instance.tags.set(tags_data)
 
-            instance.ingredient_amount.all().delete()
-
-            new_ingredients = [
-                IngredientInRecipe(
-                    recipe=instance,
-                    ingredient_id=ingredient_data['id'],
-                    amount=ingredient_data['amount']
-                ) for ingredient_data in ingredients_data
-            ]
-
-            IngredientInRecipe.objects.bulk_create(new_ingredients)
+            self.create_or_update_ingredients(instance, ingredients_data)
 
         return instance
 
